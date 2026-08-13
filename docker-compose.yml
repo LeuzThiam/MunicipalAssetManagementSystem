@@ -25,6 +25,8 @@ services:
       - "8000:8000"
     volumes:
       - .:/workspace
+      - ./backend:/app
+      - ./data:/app/data
     working_dir: /workspace/backend
     depends_on:
       db:
