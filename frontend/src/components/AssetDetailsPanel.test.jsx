@@ -23,6 +23,7 @@ describe('AssetDetailsPanel', () => {
     expect(screen.getByRole('heading', { name: 'R01-061' })).toBeInTheDocument()
     expect(screen.getByText('54 kPa')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Créer une inspection' })).toHaveAttribute('href', '/inspections?borne=borne-42&action=nouvelle')
+    expect(screen.getByRole('link', { name: 'Créer une intervention' })).toHaveAttribute('href', '/interventions?borne=borne-42&action=nouvelle')
   })
 
   it('utilise le nom lisible pour un segment de rue', () => {

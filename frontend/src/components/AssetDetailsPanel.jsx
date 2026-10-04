@@ -34,7 +34,8 @@ export function AssetDetailsPanel({ selection, onClose }) {
           <div className="asset-actions">
             <Link className="primary-link" to={`/inspections?borne=${id}`}>Voir les inspections</Link>
             <Link className="secondary-link" to={`/inspections?borne=${id}&action=nouvelle`}>Créer une inspection</Link>
-            <button type="button" className="secondary-link" disabled>Interventions — phase 20</button>
+            <Link className="secondary-link" to={`/interventions?borne=${id}`}>Voir les interventions</Link>
+            <Link className="secondary-link" to={`/interventions?borne=${id}&action=nouvelle`}>Créer une intervention</Link>
           </div>
         </>
       ) : (
