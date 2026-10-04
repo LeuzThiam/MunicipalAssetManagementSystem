@@ -74,6 +74,11 @@ tbody tr:hover { background: #f8fbf9; }
 .coming-soon .coming-icon { width: 58px; height: 58px; margin-bottom: 20px; }
 .coming-soon h2 { margin-bottom: 8px; }
 .coming-soon p { max-width: 520px; color: var(--muted); }
+.map-panel { position: relative; overflow: hidden; }
+.municipal-map { width: 100%; height: min(70vh, 760px); min-height: 520px; background: #dfe9e3; }
+.map-status { position: absolute; z-index: 1000; top: 18px; left: 50%; transform: translateX(-50%); padding: 10px 16px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.94); box-shadow: 0 8px 24px rgba(16,47,37,.14); font-size: 12px; }
+.map-popup p { margin: 6px 0 0; color: var(--muted); }
+.leaflet-control-layers, .leaflet-popup-content-wrapper, .leaflet-popup-tip { font-family: 'DM Sans', sans-serif; }
 .login-page { min-height: 100vh; display: grid; grid-template-columns: minmax(340px, 1.1fr) minmax(420px, .9fr); }
 .login-intro { display: flex; flex-direction: column; justify-content: space-between; padding: 54px clamp(40px, 7vw, 105px); color: white; background: linear-gradient(145deg, #0d2a21, #1a5b45); }
 .login-intro h1 { max-width: 680px; margin-bottom: 22px; font-size: clamp(42px, 6vw, 70px); line-height: 1.02; letter-spacing: -.055em; }
