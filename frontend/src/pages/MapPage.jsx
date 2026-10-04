@@ -1,27 +1,13 @@
 import L from 'leaflet'
 import { useEffect, useMemo, useState } from 'react'
 import { GeoJSON, LayersControl, MapContainer, ScaleControl, TileLayer, useMap } from 'react-leaflet'
-import { api } from '../api/client'
+import { chargerCouche } from './mapData'
 
 const couches = [
   { cle: 'bornes', nom: 'Bornes d’incendie', endpoint: '/bornes/', couleur: '#d45d35' },
   { cle: 'batiments', nom: 'Bâtiments', endpoint: '/batiments/', couleur: '#24745a' },
   { cle: 'rues', nom: 'Réseau routier', endpoint: '/segments-rue/', couleur: '#3d5a80' },
 ]
-
-async function chargerCouche(endpoint) {
-  const features = []
-  let page = 1
-  let suivante = true
-
-  while (suivante && page <= 100) {
-    const reponse = await api(`${endpoint}?page=${page}`)
-    features.push(...(reponse.results?.features ?? reponse.features ?? []))
-    suivante = Boolean(reponse.next)
-    page += 1
-  }
-  return { type: 'FeatureCollection', features }
-}
 
 function contenuInfo(feature, nomCouche) {
   const proprietes = feature.properties ?? {}
