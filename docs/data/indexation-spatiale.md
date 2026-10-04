@@ -1,40 +1,23 @@
-# Indexation spatiale PostGIS
+# Indexation spatiale
 
-Les colonnes `geometrie` des bornes, des batiments et des segments de rue sont
-des colonnes `geography` en SRID 4326. GeoDjango cree un index spatial GiST pour
-chacune d'elles. Le parametre `spatial_index=True` est aussi indique explicitement
-dans les modeles afin de rendre cette exigence visible dans le code.
+Les géométries des bornes, bâtiments et segments de rue utilisent PostGIS en
+SRID 4326. GeoDjango crée un index GiST sur chaque colonne. Ce choix est déclaré
+explicitement avec `spatial_index=True` dans les modèles.
 
-## Verifier les index et mesurer leur effet
-
-Depuis la racine du projet :
+Pour vérifier les index et comparer les performances :
 
 ```powershell
 docker compose run --rm backend python manage.py analyser_indexation_spatiale
 ```
 
-La commande :
-
-1. interroge `pg_indexes` et echoue si un index GiST manque ;
-2. execute `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)` pour chaque jeu de donnees ;
-3. mesure d'abord la requete avec les parcours d'index desactives localement ;
-4. relance la meme requete avec le planificateur normal et affiche le facteur de gain.
-
-Les index ne sont jamais supprimes pendant la comparaison. Les options permettent
-de choisir un autre point et un autre rayon :
-
-```powershell
-docker compose run --rm backend python manage.py analyser_indexation_spatiale `
-  --latitude 45.75 --longitude -73.46 --rayon 1000
-```
-
-Les temps dependent de la machine, du cache PostgreSQL, du volume de donnees et du
-nombre d'objets dans le rayon. Il faut donc conserver les plans affiches avec les
-mesures lors de toute comparaison de performance.
+La commande vérifie `pg_indexes`, puis exécute `EXPLAIN ANALYZE` avec et sans
+parcours d'index. Elle ne supprime aucun index et ne modifie pas la configuration
+permanente de PostgreSQL. Le point et le rayon peuvent être changés avec les options
+`--latitude`, `--longitude` et `--rayon`.
 
 ## Mesure de reference
 
-Mesure realisee le 3 octobre 2026 avec le point `45.75, -73.46` et un rayon de
+Mesure réalisée le 3 octobre 2026 avec le point `45.75, -73.46` et un rayon de
 1 000 metres :
 
 | Jeu de donnees | Resultats | Sans index | Avec index | Gain | Plan indexe |
@@ -43,6 +26,5 @@ Mesure realisee le 3 octobre 2026 avec le point `45.75, -73.46` et un rayon de
 | Batiments | 1 821 | 219,652 ms | 118,571 ms | x1,85 | Gather / Bitmap Heap Scan / Bitmap Index Scan |
 | Segments de rue | 369 | 26,529 ms | 5,470 ms | x4,85 | Bitmap Heap Scan / Bitmap Index Scan |
 
-Ces valeurs constituent une reference locale, pas une garantie de temps de reponse.
-La presence de `Bitmap Index Scan` dans chaque plan confirme toutefois que PostgreSQL
-emploie bien les index GiST pour ces recherches de proximite.
+Ces temps sont une référence locale. Le `Bitmap Index Scan` observé dans chaque
+plan confirme que PostgreSQL utilise bien les index GiST.

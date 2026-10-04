@@ -19,6 +19,7 @@ TABLES_SPATIALES = {
 
 
 def extraire_types_parcours(plan):
+    """Retourne les opérations du plan dans leur ordre d'exécution."""
     types = [plan["Node Type"]]
     for enfant in plan.get("Plans", []):
         types.extend(extraire_types_parcours(enfant))
@@ -28,6 +29,8 @@ def extraire_types_parcours(plan):
 def mesurer_requete(curseur, requete, parametres, parcours_sequentiel=False):
     with transaction.atomic():
         if parcours_sequentiel:
+            # SET LOCAL limite la désactivation des index à cette seule mesure.
+            # La configuration de PostgreSQL reste donc intacte après la commande.
             curseur.execute("SET LOCAL enable_indexscan = off")
             curseur.execute("SET LOCAL enable_bitmapscan = off")
 
@@ -112,6 +115,7 @@ class Command(BaseCommand):
 
     @staticmethod
     def _lire_index_gist(curseur):
+        """Récupère uniquement les index GiST appliqués à la géométrie."""
         curseur.execute(
             """
             SELECT tablename, indexname
@@ -127,7 +131,7 @@ class Command(BaseCommand):
 
     @staticmethod
     def _requete_proximite(table):
-        # Le nom de table provient uniquement de TABLES_SPATIALES, jamais de l'utilisateur.
+        # Le nom de table vient de notre constante, et non d'une saisie utilisateur.
         return f"""
             SELECT id
             FROM {table}
