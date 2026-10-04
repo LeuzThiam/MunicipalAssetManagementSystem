@@ -45,6 +45,12 @@ def remplacer_donnees(modele, objets):
     Si la suppression ou l'insertion echoue, transaction.atomic annule les
     deux operations et conserve le snapshot precedent.
     """
+    if not objets:
+        raise RuntimeError(
+            f"Remplacement refuse pour {modele.__name__}: "
+            "aucun objet valide a charger."
+        )
+
     with transaction.atomic():
         modele.objects.all().delete()
         modele.objects.bulk_create(objets, batch_size=TAILLE_LOT)
@@ -86,6 +92,13 @@ def charger_bornes(chemin_source, chemin_rejets):
             entrees_rejetees.append((feature, ", ".join(problemes)))
             continue
 
+        try:
+            objet = Borne(**transformer_borne(feature))
+        except (KeyError, TypeError, ValueError) as erreur:
+            entrees_rejetees.append((feature, f"transformation_invalide: {erreur}"))
+            continue
+
+        objets_a_charger.append(objet)
         identifiants_vus.add(identifiant_source)
 
         proprietes = feature["properties"]
@@ -93,11 +106,6 @@ def charger_bornes(chemin_source, chemin_rejets):
             nombre_dates_entretien_manquantes += 1
         if proprietes.get("PRESSIONDYNAMIQUE") is None:
             nombre_pressions_manquantes += 1
-
-        try:
-            objets_a_charger.append(Borne(**transformer_borne(feature)))
-        except (KeyError, TypeError, ValueError) as erreur:
-            entrees_rejetees.append((feature, f"transformation_invalide: {erreur}"))
 
     ecrire_rejets(chemin_rejets, entrees_rejetees)
     nombre_verifie = remplacer_donnees(Borne, objets_a_charger)

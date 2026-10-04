@@ -14,7 +14,7 @@ from rest_framework.test import APITestCase
 
 from accounts.models import Utilisateur
 from .import_pipeline.extraction import ErreurExtractionGeoJSON, lire_geojson
-from .import_pipeline.chargement import remplacer_donnees
+from .import_pipeline.chargement import charger_bornes, remplacer_donnees
 from .import_pipeline.validation import valider_borne, valider_segment_rue
 from .models import Batiment, Borne, SegmentRue
 from .views import RAYON_MAX_METRES, lire_bbox, lire_point, lire_rayon
@@ -195,6 +195,62 @@ class VerificationChargementTests(SimpleTestCase):
 
         with self.assertRaisesRegex(RuntimeError, "3 objets attendus, 2 trouves"):
             remplacer_donnees(modele, objets)
+
+    def test_remplacer_donnees_refuse_de_supprimer_si_aucun_objet_est_valide(self):
+        modele, gestionnaire = self.construire_modele_simule(nombre_en_base=3)
+
+        with self.assertRaisesRegex(RuntimeError, "aucun objet valide"):
+            remplacer_donnees(modele, [])
+
+        gestionnaire.all.assert_not_called()
+        gestionnaire.bulk_create.assert_not_called()
+
+    @patch("assets.import_pipeline.chargement.ecrire_rejets")
+    @patch("assets.import_pipeline.chargement.remplacer_donnees", return_value=1)
+    @patch("assets.import_pipeline.chargement.transformer_borne")
+    @patch("assets.import_pipeline.chargement.lire_geojson")
+    def test_borne_reutilise_un_identifiant_apres_transformation_invalide(
+        self,
+        lire_geojson_simule,
+        transformer_borne_simule,
+        remplacer_donnees_simule,
+        ecrire_rejets_simule,
+    ):
+        proprietes = {
+            "ID": "B-1",
+            "MUNICIPALITE": "60013",
+            "MISEAJOUR": "2026-01-01",
+        }
+        premiere = {
+            "type": "Feature",
+            "properties": dict(proprietes),
+            "geometry": {"type": "Point", "coordinates": [-73.5, 45.5]},
+        }
+        seconde = {
+            "type": "Feature",
+            "properties": dict(proprietes),
+            "geometry": {"type": "Point", "coordinates": [-73.4, 45.6]},
+        }
+        lire_geojson_simule.return_value = [premiere, seconde]
+        transformer_borne_simule.side_effect = [
+            ValueError("geometrie invalide"),
+            {
+                "identifiant_source": "B-1",
+                "municipalite": "60013",
+                "date_mise_a_jour_source": "2026-01-01",
+                "geometrie": Point(-73.4, 45.6, srid=4326),
+            },
+        ]
+
+        rapport = charger_bornes("source.geojson", "rejets.geojson")
+
+        self.assertEqual(rapport["charge"], 1)
+        self.assertEqual(rapport["rejete"], 1)
+        self.assertEqual(rapport["identifiants_dupliques"], 0)
+        objets = remplacer_donnees_simule.call_args.args[1]
+        self.assertEqual(len(objets), 1)
+        self.assertEqual(objets[0].identifiant_source, "B-1")
+        ecrire_rejets_simule.assert_called_once()
 
 
 class APIgeospatialeTests(APITestCase):
