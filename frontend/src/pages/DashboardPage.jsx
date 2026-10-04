@@ -1,44 +1,36 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
 import { api } from '../api/client'
 import { useAuth } from '../context/auth'
 
-const indicateurs = [['Bornes', '/bornes/', 'BO'], ['Bâtiments', '/batiments/', 'BA'], ['Segments de rue', '/segments-rue/', 'RR']]
+const libellesStatuts = { OUVERTE: 'Ouvertes', PLANIFIEE: 'Planifiées', EN_COURS: 'En cours', TERMINEE: 'Terminées', ANNULEE: 'Annulées' }
+const libellesEtats = { BON: 'Bon état', A_SURVEILLER: 'À surveiller', REPARATION_REQUISE: 'Réparation requise', HORS_SERVICE: 'Hors service' }
+
+function nombre(valeur) {
+  return valeur?.toLocaleString('fr-CA') ?? '—'
+}
+
+function Repartition({ titre, donnees, cleLibelle, libelles }) {
+  const maximum = Math.max(...donnees.map((element) => element.total), 1)
+  return <article className="panel chart-card"><div className="panel-heading"><div><p className="eyebrow">Répartition</p><h2>{titre}</h2></div></div><div className="bar-chart">{donnees.map((element) => <div className="bar-row" key={element[cleLibelle]}><span>{libelles[element[cleLibelle]] ?? element[cleLibelle]}</span><div className="bar-track"><div className="bar-fill" style={{ width: `${(element.total / maximum) * 100}%` }} /></div><strong>{element.total}</strong></div>)}{!donnees.length && <p className="empty-chart">Aucune donnée enregistrée.</p>}</div></article>
+}
 
 export function DashboardPage() {
   const { utilisateur } = useAuth()
-  const [totaux, setTotaux] = useState({})
+  const [donnees, setDonnees] = useState(null)
+  const [erreur, setErreur] = useState(false)
 
   useEffect(() => {
-    Promise.all(indicateurs.map(async ([libelle, endpoint]) => {
-      const donnees = await api(endpoint)
-      return [libelle, donnees.count ?? donnees.features?.length ?? 0]
-    })).then((resultats) => setTotaux(Object.fromEntries(resultats))).catch(() => setTotaux({}))
+    api('/tableau-de-bord/').then(setDonnees).catch(() => setErreur(true))
   }, [])
 
-  return (
-    <div className="page">
-      <header className="page-header">
-        <div><p className="eyebrow">Vue d’ensemble</p><h1>Bonjour {utilisateur.prenom},</h1><p>Voici l’état actuel des données municipales.</p></div>
-        <span className="date-chip">Données opérationnelles</span>
-      </header>
-      <section className="stats-grid" aria-label="Indicateurs principaux">
-        {indicateurs.map(([libelle, , abreviation]) => (
-          <article className="stat-card" key={libelle}><span className="stat-icon">{abreviation}</span><div><strong>{totaux[libelle]?.toLocaleString('fr-CA') ?? '—'}</strong><span>{libelle}</span></div></article>
-        ))}
-        <article className="stat-card accent-card"><span className="stat-icon">SIG</span><div><strong>3</strong><span>Couches spatiales</span></div></article>
-      </section>
-      <section className="dashboard-grid">
-        <article className="panel map-preview">
-          <div className="panel-heading"><div><p className="eyebrow">Territoire</p><h2>Aperçu cartographique</h2></div><span className="status-dot">Données disponibles</span></div>
-          <div className="map-placeholder" aria-label="Emplacement réservé à la carte"><div className="map-grid" /><span className="map-pin pin-one">●</span><span className="map-pin pin-two">●</span><span className="map-pin pin-three">●</span><p>La carte interactive sera intégrée à la phase 17.</p></div>
-        </article>
-        <article className="panel next-actions">
-          <p className="eyebrow">À surveiller</p><h2>Priorités opérationnelles</h2>
-          <div className="action-item"><span>01</span><div><strong>Entretiens manquants</strong><small>Identifier les bornes à planifier</small></div></div>
-          <div className="action-item"><span>02</span><div><strong>Inspections terrain</strong><small>Module prévu à la phase 19</small></div></div>
-          <div className="action-item"><span>03</span><div><strong>Interventions ouvertes</strong><small>Module prévu à la phase 20</small></div></div>
-        </article>
-      </section>
-    </div>
-  )
+  const indicateurs = [
+    ['BO', 'Bornes', donnees?.bornes_total],
+    ['SE', 'Sans entretien', donnees?.bornes_sans_entretien],
+    ['kPa', 'Pression moyenne', donnees?.pression_moyenne],
+    ['IT', 'Interventions ouvertes', donnees?.interventions_ouvertes],
+    ['IN', 'Inspections ce mois', donnees?.inspections_ce_mois],
+  ]
+
+  return <div className="page"><header className="page-header"><div><p className="eyebrow">Vue d’ensemble</p><h1>Bonjour {utilisateur.prenom},</h1><p>Voici la situation opérationnelle du patrimoine municipal.</p></div><span className="date-chip">Données actualisées</span></header>{erreur && <p className="empty-state error-state">Le tableau de bord n’est pas disponible pour le moment.</p>}<section className="stats-grid dashboard-stats" aria-label="Indicateurs principaux">{indicateurs.map(([abreviation, libelle, valeur], index) => <article className={`stat-card${index === 3 ? ' accent-card' : ''}`} key={libelle}><span className="stat-icon">{abreviation}</span><div><strong>{nombre(valeur)}</strong><span>{libelle}</span></div></article>)}</section><section className="dashboard-charts"><Repartition titre="Interventions par statut" donnees={donnees?.interventions_par_statut ?? []} cleLibelle="statut" libelles={libellesStatuts} /><Repartition titre="Inspections par état" donnees={donnees?.inspections_par_etat ?? []} cleLibelle="etat" libelles={libellesEtats} /></section><section className="panel dashboard-assets"><div><p className="eyebrow">Inventaire</p><h2>Couverture des données</h2></div><div className="asset-totals"><Link to="/bornes"><strong>{nombre(donnees?.bornes_total)}</strong><span>Bornes</span></Link><Link to="/batiments"><strong>{nombre(donnees?.batiments_total)}</strong><span>Bâtiments</span></Link><Link to="/rues"><strong>{nombre(donnees?.segments_rue_total)}</strong><span>Segments de rue</span></Link><Link to="/carte"><strong>3</strong><span>Couches cartographiques</span></Link></div></section></div>
 }
