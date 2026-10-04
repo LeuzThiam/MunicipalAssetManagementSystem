@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router'
 import { AppShell } from './components/AppShell'
-import { ProtectedRoute } from './components/ProtectedRoute'
+import { ProtectedRoute, RoleRoute } from './components/ProtectedRoute'
 import { AuthProvider } from './context/AuthContext'
 import { AdministrationPage } from './pages/AdministrationPage'
 import { DashboardPage } from './pages/DashboardPage'
@@ -25,7 +25,9 @@ function App() {
             <Route path="/carte" element={<MapPage />} />
             <Route path="/inspections" element={<WorkflowsPage type="inspections" />} />
             <Route path="/interventions" element={<WorkflowsPage type="interventions" />} />
-            <Route path="/administration" element={<AdministrationPage />} />
+            <Route element={<RoleRoute role="ADMIN" />}>
+              <Route path="/administration" element={<AdministrationPage />} />
+            </Route>
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/tableau-de-bord" replace />} />

@@ -5,7 +5,7 @@ export const jetons = {
   lireRafraichissement: () => sessionStorage.getItem('jeton_rafraichissement'),
   enregistrer({ access, refresh }) {
     sessionStorage.setItem('jeton_acces', access)
-    sessionStorage.setItem('jeton_rafraichissement', refresh)
+    if (refresh) sessionStorage.setItem('jeton_rafraichissement', refresh)
   },
   effacer() {
     sessionStorage.removeItem('jeton_acces')
@@ -13,7 +13,7 @@ export const jetons = {
   },
 }
 
-export async function api(path, options = {}) {
+async function executerRequete(path, options, nouvelleTentative) {
   const headers = new Headers(options.headers)
   const acces = jetons.lireAcces()
   if (acces) headers.set('Authorization', `Bearer ${acces}`)
@@ -21,7 +21,24 @@ export async function api(path, options = {}) {
     headers.set('Content-Type', 'application/json')
   }
 
-  const reponse = await fetch(`${API_URL}${path}`, { ...options, headers })
+  let reponse = await fetch(`${API_URL}${path}`, { ...options, headers })
+
+  if (reponse.status === 401 && !nouvelleTentative && path !== '/connexion/rafraichir/') {
+    const refresh = jetons.lireRafraichissement()
+    if (refresh) {
+      const rafraichissement = await fetch(`${API_URL}/connexion/rafraichir/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh }),
+      })
+      if (rafraichissement.ok) {
+        jetons.enregistrer(await rafraichissement.json())
+        return executerRequete(path, options, true)
+      }
+    }
+    jetons.effacer()
+  }
+
   if (reponse.status === 204 || reponse.status === 205) return null
 
   const contenu = await reponse.json().catch(() => ({}))
@@ -31,4 +48,8 @@ export async function api(path, options = {}) {
     throw erreur
   }
   return contenu
+}
+
+export function api(path, options = {}) {
+  return executerRequete(path, options, false)
 }

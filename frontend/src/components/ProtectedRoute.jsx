@@ -8,3 +8,9 @@ export function ProtectedRoute() {
   if (!utilisateur) return <Navigate to="/connexion" state={{ from: emplacement }} replace />
   return <Outlet />
 }
+
+export function RoleRoute({ role }) {
+  const { utilisateur } = useAuth()
+  if (utilisateur?.role !== role) return <Navigate to="/tableau-de-bord" replace />
+  return <Outlet />
+}
