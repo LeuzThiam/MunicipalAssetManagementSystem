@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext'
 import { AdministrationPage } from './pages/AdministrationPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
+import { InspectionsPage } from './pages/InspectionsPage'
 import { MapPage } from './pages/MapPage'
 import { ResourcePage } from './pages/ResourcePage'
 import { WorkflowsPage } from './pages/WorkflowsPage'
@@ -23,7 +24,7 @@ function App() {
             <Route path="/batiments" element={<ResourcePage {...ressources.batiments} />} />
             <Route path="/rues" element={<ResourcePage {...ressources.rues} />} />
             <Route path="/carte" element={<MapPage />} />
-            <Route path="/inspections" element={<WorkflowsPage type="inspections" />} />
+            <Route path="/inspections" element={<InspectionsPage />} />
             <Route path="/interventions" element={<WorkflowsPage type="interventions" />} />
             <Route element={<RoleRoute role="ADMIN" />}>
               <Route path="/administration" element={<AdministrationPage />} />
