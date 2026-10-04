@@ -5,7 +5,7 @@ export async function chargerCouche(endpoint) {
   let page = 1
   let suivante = true
 
-  while (suivante && page <= 100) {
+  while (suivante) {
     const reponse = await api(`${endpoint}?page=${page}`)
     features.push(...(reponse.results?.features ?? reponse.features ?? []))
     suivante = Boolean(reponse.next)

@@ -28,4 +28,20 @@ describe('chargement des couches cartographiques', () => {
     expect(api).toHaveBeenNthCalledWith(1, '/bornes/?page=1')
     expect(api).toHaveBeenNthCalledWith(2, '/bornes/?page=2')
   })
+
+  it('continue au-delà de cent pages tant que l’API annonce une suite', async () => {
+    api.mockImplementation(async (url) => {
+      const page = Number(new URL(url, 'http://api.test').searchParams.get('page'))
+      return {
+        next: page < 101 ? `http://api.test/batiments/?page=${page + 1}` : null,
+        results: { features: [{ type: 'Feature', id: page }] },
+      }
+    })
+
+    const collection = await chargerCouche('/batiments/')
+
+    expect(collection.features).toHaveLength(101)
+    expect(collection.features.at(-1)).toEqual({ type: 'Feature', id: 101 })
+    expect(api).toHaveBeenCalledTimes(101)
+  })
 })
