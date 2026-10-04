@@ -6,9 +6,9 @@ import { AdministrationPage } from './pages/AdministrationPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
 import { InspectionsPage } from './pages/InspectionsPage'
+import { InterventionsPage } from './pages/InterventionsPage'
 import { MapPage } from './pages/MapPage'
 import { ResourcePage } from './pages/ResourcePage'
-import { WorkflowsPage } from './pages/WorkflowsPage'
 import { ressources } from './resources'
 
 function App() {
@@ -25,7 +25,7 @@ function App() {
             <Route path="/rues" element={<ResourcePage {...ressources.rues} />} />
             <Route path="/carte" element={<MapPage />} />
             <Route path="/inspections" element={<InspectionsPage />} />
-            <Route path="/interventions" element={<WorkflowsPage type="interventions" />} />
+            <Route path="/interventions" element={<InterventionsPage />} />
             <Route element={<RoleRoute role="ADMIN" />}>
               <Route path="/administration" element={<AdministrationPage />} />
             </Route>

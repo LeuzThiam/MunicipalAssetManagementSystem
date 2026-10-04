@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { useAuth } from '../context/auth'
 
 function afficherDate(valeur) {
   if (!valeur) return 'Non renseigné'
@@ -7,11 +8,13 @@ function afficherDate(valeur) {
 }
 
 export function AssetDetailsPanel({ selection, onClose }) {
+  const { utilisateur } = useAuth()
   if (!selection) return null
 
   const { couche, feature } = selection
   const proprietes = feature.properties ?? {}
   const estBorne = couche.cle === 'bornes'
+  const peutGererInterventions = ['ADMIN', 'GESTIONNAIRE'].includes(utilisateur?.role)
   const id = feature.id ?? proprietes.id
   const identifiant = estBorne
     ? proprietes.identifiant_source ?? couche.nom
@@ -34,7 +37,8 @@ export function AssetDetailsPanel({ selection, onClose }) {
           <div className="asset-actions">
             <Link className="primary-link" to={`/inspections?borne=${id}`}>Voir les inspections</Link>
             <Link className="secondary-link" to={`/inspections?borne=${id}&action=nouvelle`}>Créer une inspection</Link>
-            <button type="button" className="secondary-link" disabled>Interventions — phase 20</button>
+            <Link className="secondary-link" to={`/interventions?borne=${id}`}>Voir les interventions</Link>
+            {peutGererInterventions && <Link className="secondary-link" to={`/interventions?borne=${id}&action=nouvelle`}>Créer une intervention</Link>}
           </div>
         </>
       ) : (
