@@ -10,7 +10,7 @@ vi.mock('../api/client', () => ({ api: vi.fn() }))
 
 describe('InterventionsPage', () => {
   it('enregistre une intervention pour la borne indiquée dans l’URL', async () => {
-    api.mockResolvedValueOnce({ results: [] }).mockResolvedValueOnce({ id: 7, borne_identifiant: 'R01-061', type: 'REPARATION', priorite: 'HAUTE', statut: 'PLANIFIEE', planifiee_le: null, createur_nom: 'Moussa Ndiaye' })
+    api.mockResolvedValueOnce({ count: 0, next: null, previous: null, results: [] }).mockResolvedValueOnce({ id: 7, borne_identifiant: 'R01-061', type: 'REPARATION', priorite: 'HAUTE', statut: 'PLANIFIEE', planifiee_le: null, createur_nom: 'Moussa Ndiaye' })
     const utilisateur = userEvent.setup()
 
     render(<MemoryRouter initialEntries={['/interventions?borne=3348&action=nouvelle']}><AuthContextForTests value={{ utilisateur: { role: 'GESTIONNAIRE' } }}><InterventionsPage /></AuthContextForTests></MemoryRouter>)

@@ -41,6 +41,13 @@ class InterventionApiTests(APITestCase):
         self.assertEqual(intervention.creee_par, self.gestionnaire)
         self.assertEqual(intervention.borne, self.borne)
 
+    def test_utilisateur_anonyme_ne_peut_pas_consulter_les_interventions(self):
+        self.client.force_authenticate(user=None)
+
+        reponse = self.client.get(reverse("intervention-list"))
+
+        self.assertEqual(reponse.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_inspecteur_ne_peut_pas_creer_une_intervention(self):
         inspecteur = Utilisateur.objects.create_user(
             email="inspecteur@example.com",

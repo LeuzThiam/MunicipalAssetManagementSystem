@@ -25,6 +25,9 @@ export function InterventionsPage() {
   const [parametres, setParametres] = useSearchParams()
   const borne = parametres.get('borne') ?? ''
   const [interventions, setInterventions] = useState([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pages, setPages] = useState({ suivante: false, precedente: false })
   const [etatPage, setEtatPage] = useState('chargement')
   const [erreur, setErreur] = useState('')
   const [formulaire, setFormulaire] = useState({ type: 'ENTRETIEN', priorite: 'NORMALE', statut: 'OUVERTE', description: '', planifiee_le: '' })
@@ -32,14 +35,17 @@ export function InterventionsPage() {
   const creationOuverte = parametres.get('action') === 'nouvelle' && borne && peutGerer
 
   useEffect(() => {
-    const suffixe = borne ? `?borne=${borne}` : ''
-    api(`/interventions/${suffixe}`)
+    const parametresApi = new URLSearchParams({ page })
+    if (borne) parametresApi.set('borne', borne)
+    api(`/interventions/?${parametresApi}`)
       .then((reponse) => {
         setInterventions(reponse.results ?? [])
+        setTotal(reponse.count ?? reponse.results?.length ?? 0)
+        setPages({ suivante: Boolean(reponse.next), precedente: Boolean(reponse.previous) })
         setEtatPage('pret')
       })
       .catch(() => setEtatPage('erreur'))
-  }, [borne])
+  }, [borne, page])
 
   function modifier(champ, valeur) {
     setFormulaire((courant) => ({ ...courant, [champ]: valeur }))
@@ -54,6 +60,7 @@ export function InterventionsPage() {
         body: JSON.stringify({ ...formulaire, borne: Number(borne), planifiee_le: formulaire.planifiee_le || null }),
       })
       setInterventions((courantes) => [intervention, ...courantes])
+      setTotal((courant) => courant + 1)
       setParametres({ borne })
     } catch (cause) {
       setErreur(cause.message)
@@ -79,7 +86,7 @@ export function InterventionsPage() {
       <header className="page-header"><div><p className="eyebrow">Travaux municipaux</p><h1>Interventions</h1><p>Planifiez les travaux sur les bornes et suivez leur progression.</p></div>{borne && peutGerer && <button className="secondary-button" type="button" onClick={() => setParametres({ borne, action: 'nouvelle' })}>Nouvelle intervention</button>}</header>
       {creationOuverte && <section className="panel inspection-form-panel"><div className="panel-heading"><div><p className="eyebrow">Borne #{borne}</p><h2>Nouvelle intervention</h2></div><button className="close-button" type="button" aria-label="Fermer le formulaire" onClick={() => setParametres({ borne })}>×</button></div><form className="inspection-form" onSubmit={enregistrer}><label>Type<select value={formulaire.type} onChange={(event) => modifier('type', event.target.value)}>{types.map(([valeur, texte]) => <option key={valeur} value={valeur}>{texte}</option>)}</select></label><label>Priorité<select value={formulaire.priorite} onChange={(event) => modifier('priorite', event.target.value)}>{priorites.map(([valeur, texte]) => <option key={valeur} value={valeur}>{texte}</option>)}</select></label><label>Statut<select value={formulaire.statut} onChange={(event) => modifier('statut', event.target.value)}>{statuts.filter(([valeur]) => valeur !== 'TERMINEE').map(([valeur, texte]) => <option key={valeur} value={valeur}>{texte}</option>)}</select></label><label>Date planifiée<input type="datetime-local" value={formulaire.planifiee_le} onChange={(event) => modifier('planifiee_le', event.target.value)} /></label><label className="full-field">Description<textarea rows="4" value={formulaire.description} onChange={(event) => modifier('description', event.target.value)} required /></label>{erreur && <p className="form-error full-field">{erreur}</p>}<button className="primary-button form-submit" type="submit">Enregistrer l’intervention</button></form></section>}
       {!creationOuverte && erreur && <p className="form-error">{erreur}</p>}
-      <section className="panel table-panel"><div className="table-toolbar"><strong>{borne ? `Historique de la borne #${borne}` : 'Toutes les interventions'}</strong><span className="page-summary">{interventions.length} résultat(s)</span></div>{etatPage === 'chargement' && <p className="empty-state">Chargement des interventions…</p>}{etatPage === 'erreur' && <p className="empty-state error-state">Les interventions ne sont pas disponibles.</p>}{etatPage === 'pret' && <div className="table-scroll"><table><thead><tr><th>Borne</th><th>Type</th><th>Priorité</th><th>Statut</th><th>Planification</th><th>Créée par</th></tr></thead><tbody>{interventions.map((intervention) => <tr key={intervention.id}><td>{intervention.borne_identifiant}</td><td>{libelle(types, intervention.type)}</td><td>{libelle(priorites, intervention.priorite)}</td><td>{peutGerer ? <select aria-label={`Statut de l’intervention ${intervention.id}`} value={intervention.statut} onChange={(event) => changerStatut(intervention, event.target.value)}>{statuts.map(([valeur, texte]) => <option key={valeur} value={valeur}>{texte}</option>)}</select> : libelle(statuts, intervention.statut)}</td><td>{dateLisible(intervention.planifiee_le)}</td><td>{intervention.createur_nom}</td></tr>)}</tbody></table>{!interventions.length && <p className="empty-state">Aucune intervention enregistrée.</p>}</div>}</section>
+      <section className="panel table-panel"><div className="table-toolbar"><strong>{borne ? `Historique de la borne #${borne}` : 'Toutes les interventions'}</strong><span className="page-summary">{total} résultat(s)</span></div>{etatPage === 'chargement' && <p className="empty-state">Chargement des interventions…</p>}{etatPage === 'erreur' && <p className="empty-state error-state">Les interventions ne sont pas disponibles.</p>}{etatPage === 'pret' && <><div className="table-scroll"><table><thead><tr><th>Borne</th><th>Type</th><th>Priorité</th><th>Statut</th><th>Planification</th><th>Créée par</th></tr></thead><tbody>{interventions.map((intervention) => <tr key={intervention.id}><td>{intervention.borne_identifiant}</td><td>{libelle(types, intervention.type)}</td><td>{libelle(priorites, intervention.priorite)}</td><td>{peutGerer ? <select aria-label={`Statut de l’intervention ${intervention.id}`} value={intervention.statut} onChange={(event) => changerStatut(intervention, event.target.value)}>{statuts.map(([valeur, texte]) => <option key={valeur} value={valeur}>{texte}</option>)}</select> : libelle(statuts, intervention.statut)}</td><td>{dateLisible(intervention.planifiee_le)}</td><td>{intervention.createur_nom}</td></tr>)}</tbody></table>{!interventions.length && <p className="empty-state">Aucune intervention enregistrée.</p>}</div><nav className="pagination" aria-label="Pagination"><button type="button" disabled={!pages.precedente} onClick={() => setPage((courante) => courante - 1)}>Précédent</button><span>Page {page}</span><button type="button" disabled={!pages.suivante} onClick={() => setPage((courante) => courante + 1)}>Suivant</button></nav></>}</section>
     </div>
   )
 }

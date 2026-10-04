@@ -1,4 +1,5 @@
 from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
 
 from .models import Intervention
 from .permissions import PermissionIntervention
@@ -7,7 +8,7 @@ from .serializers import InterventionSerializer
 
 class InterventionViewSet(viewsets.ModelViewSet):
     serializer_class = InterventionSerializer
-    permission_classes = [PermissionIntervention]
+    permission_classes = [IsAuthenticated, PermissionIntervention]
     http_method_names = ["get", "post", "patch", "head", "options"]
     filterset_fields = ["borne", "type", "priorite", "statut", "creee_par"]
     ordering_fields = ["planifiee_le", "date_creation", "priorite"]

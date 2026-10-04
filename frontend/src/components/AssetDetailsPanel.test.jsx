@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
+import { AuthContextForTests } from '../test/AuthContextForTests'
 import { AssetDetailsPanel } from './AssetDetailsPanel'
 
 describe('AssetDetailsPanel', () => {
@@ -18,7 +19,7 @@ describe('AssetDetailsPanel', () => {
       },
     }
 
-    render(<MemoryRouter><AssetDetailsPanel selection={selection} onClose={vi.fn()} /></MemoryRouter>)
+    render(<MemoryRouter><AuthContextForTests value={{ utilisateur: { role: 'GESTIONNAIRE' } }}><AssetDetailsPanel selection={selection} onClose={vi.fn()} /></AuthContextForTests></MemoryRouter>)
 
     expect(screen.getByRole('heading', { name: 'R01-061' })).toBeInTheDocument()
     expect(screen.getByText('54 kPa')).toBeInTheDocument()
@@ -38,8 +39,17 @@ describe('AssetDetailsPanel', () => {
       },
     }
 
-    render(<MemoryRouter><AssetDetailsPanel selection={selection} onClose={vi.fn()} /></MemoryRouter>)
+    render(<MemoryRouter><AuthContextForTests value={{ utilisateur: { role: 'LECTEUR' } }}><AssetDetailsPanel selection={selection} onClose={vi.fn()} /></AuthContextForTests></MemoryRouter>)
 
     expect(screen.getByRole('heading', { name: 'Rue Exemple' })).toBeInTheDocument()
+  })
+
+  it('masque la création d’intervention pour un lecteur', () => {
+    const selection = { couche: { cle: 'bornes', nom: 'Bornes' }, feature: { id: 42, properties: { identifiant_source: 'R01-061' } } }
+
+    const vue = render(<MemoryRouter><AuthContextForTests value={{ utilisateur: { role: 'LECTEUR' } }}><AssetDetailsPanel selection={selection} onClose={vi.fn()} /></AuthContextForTests></MemoryRouter>)
+
+    expect(within(vue.container).getByRole('link', { name: 'Voir les interventions' })).toBeInTheDocument()
+    expect(within(vue.container).queryByRole('link', { name: 'Créer une intervention' })).not.toBeInTheDocument()
   })
 })
