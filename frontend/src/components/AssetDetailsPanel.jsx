@@ -1,5 +1,3 @@
-import { Link } from 'react-router'
-
 function afficherDate(valeur) {
   if (!valeur) return 'Non renseigné'
   const date = new Date(`${valeur}T00:00:00`)
@@ -11,9 +9,10 @@ export function AssetDetailsPanel({ selection, onClose }) {
 
   const { couche, feature } = selection
   const proprietes = feature.properties ?? {}
-  const identifiant = proprietes.identifiant_source ?? proprietes.nom ?? couche.nom
-  const id = feature.id ?? proprietes.id
   const estBorne = couche.cle === 'bornes'
+  const identifiant = estBorne
+    ? proprietes.identifiant_source ?? couche.nom
+    : proprietes.nom ?? proprietes.identifiant_source ?? couche.nom
 
   return (
     <aside className="asset-details" aria-label={`Détails de ${identifiant}`}>
@@ -30,9 +29,8 @@ export function AssetDetailsPanel({ selection, onClose }) {
             <div><dt>Dernier entretien</dt><dd>{afficherDate(proprietes.date_entretien)}</dd></div>
           </dl>
           <div className="asset-actions">
-            <Link className="primary-link" to={`/inspections?borne=${id}`}>Voir les inspections</Link>
-            <Link className="secondary-link" to={`/inspections?borne=${id}&action=nouvelle`}>Créer une inspection</Link>
-            <Link className="secondary-link" to={`/interventions?borne=${id}&action=nouvelle`}>Créer une intervention</Link>
+            <button type="button" className="primary-link" disabled>Inspections — phase 19</button>
+            <button type="button" className="secondary-link" disabled>Interventions — phase 20</button>
           </div>
         </>
       ) : (

@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 import { AssetDetailsPanel } from './AssetDetailsPanel'
 
@@ -18,13 +17,27 @@ describe('AssetDetailsPanel', () => {
       },
     }
 
-    render(<MemoryRouter><AssetDetailsPanel selection={selection} onClose={vi.fn()} /></MemoryRouter>)
+    render(<AssetDetailsPanel selection={selection} onClose={vi.fn()} />)
 
     expect(screen.getByRole('heading', { name: 'R01-061' })).toBeInTheDocument()
     expect(screen.getByText('54 kPa')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Créer une inspection' })).toHaveAttribute(
-      'href',
-      '/inspections?borne=borne-42&action=nouvelle',
-    )
+    expect(screen.getByRole('button', { name: 'Inspections — phase 19' })).toBeDisabled()
+  })
+
+  it('utilise le nom lisible pour un segment de rue', () => {
+    const selection = {
+      couche: { cle: 'rues', nom: 'Réseau routier' },
+      feature: {
+        properties: {
+          identifiant_source: 'SEG-1024',
+          nom: 'Rue Exemple',
+          type_rue: 'Locale',
+        },
+      },
+    }
+
+    render(<AssetDetailsPanel selection={selection} onClose={vi.fn()} />)
+
+    expect(screen.getByRole('heading', { name: 'Rue Exemple' })).toBeInTheDocument()
   })
 })

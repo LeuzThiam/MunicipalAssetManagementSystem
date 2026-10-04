@@ -93,6 +93,7 @@ tbody tr:hover { background: #f8fbf9; }
 .primary-link, .secondary-link { padding: 11px 13px; border-radius: 9px; text-align: center; text-decoration: none; font-size: 13px; font-weight: 700; }
 .primary-link { color: #fff; background: var(--green-800); }
 .secondary-link { border: 1px solid var(--line); color: var(--green-800); background: #fff; }
+.asset-actions button:disabled { cursor: not-allowed; opacity: .58; }
 .login-page { min-height: 100vh; display: grid; grid-template-columns: minmax(340px, 1.1fr) minmax(420px, .9fr); }
 .login-intro { display: flex; flex-direction: column; justify-content: space-between; padding: 54px clamp(40px, 7vw, 105px); color: white; background: linear-gradient(145deg, #0d2a21, #1a5b45); }
 .login-intro h1 { max-width: 680px; margin-bottom: 22px; font-size: clamp(42px, 6vw, 70px); line-height: 1.02; letter-spacing: -.055em; }

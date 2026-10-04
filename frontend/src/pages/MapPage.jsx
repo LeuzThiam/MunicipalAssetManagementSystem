@@ -35,6 +35,16 @@ function AjusterVue({ donnees }) {
   return null
 }
 
+function RafraichirTaille({ selection }) {
+  const carte = useMap()
+  useEffect(() => {
+    carte.invalidateSize()
+    const minuterie = window.setTimeout(() => carte.invalidateSize(), 200)
+    return () => window.clearTimeout(minuterie)
+  }, [carte, selection])
+  return null
+}
+
 export function MapPage() {
   const [donnees, setDonnees] = useState({})
   const [etat, setEtat] = useState('chargement')
@@ -80,6 +90,7 @@ export function MapPage() {
               ))}
             </LayersControl>
             <ScaleControl imperial={false} />
+            <RafraichirTaille selection={selection} />
             {etat === 'pret' && <AjusterVue donnees={donnees} />}
           </MapContainer>
         </div>
