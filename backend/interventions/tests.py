@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.contrib.gis.geos import Point
 from django.urls import reverse
 from django.utils import timezone
@@ -72,6 +74,44 @@ class InterventionApiTests(APITestCase):
             "type": Intervention.Type.REPARATION,
             "statut": Intervention.Statut.TERMINEE,
             "description": "Travaux terminés.",
+        })
+
+        self.assertEqual(reponse.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("terminee_le", reponse.data["erreurs"])
+
+    def test_date_de_realisation_est_refusee_si_intervention_non_terminee(self):
+        reponse = self.client.post(reverse("intervention-list"), {
+            "borne": self.borne.pk,
+            "type": Intervention.Type.REPARATION,
+            "statut": Intervention.Statut.EN_COURS,
+            "description": "Travaux toujours en cours.",
+            "terminee_le": timezone.now(),
+        })
+
+        self.assertEqual(reponse.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("terminee_le", reponse.data["erreurs"])
+
+    def test_date_de_realisation_future_est_refusee(self):
+        reponse = self.client.post(reverse("intervention-list"), {
+            "borne": self.borne.pk,
+            "type": Intervention.Type.REPARATION,
+            "statut": Intervention.Statut.TERMINEE,
+            "description": "Travaux déclarés terminés trop tôt.",
+            "terminee_le": timezone.now() + timedelta(days=1),
+        })
+
+        self.assertEqual(reponse.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("terminee_le", reponse.data["erreurs"])
+
+    def test_realisation_ne_peut_pas_preceder_la_planification(self):
+        maintenant = timezone.now()
+        reponse = self.client.post(reverse("intervention-list"), {
+            "borne": self.borne.pk,
+            "type": Intervention.Type.REPARATION,
+            "statut": Intervention.Statut.TERMINEE,
+            "description": "Chronologie incohérente.",
+            "planifiee_le": maintenant,
+            "terminee_le": maintenant - timedelta(hours=1),
         })
 
         self.assertEqual(reponse.status_code, status.HTTP_400_BAD_REQUEST)
