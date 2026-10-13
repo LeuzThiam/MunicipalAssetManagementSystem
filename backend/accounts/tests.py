@@ -79,6 +79,15 @@ class AdministrationUtilisateursTests(APITestCase):
             status.HTTP_403_FORBIDDEN,
         )
 
+    def test_creation_refuse_un_mot_de_passe_faible(self):
+        self.client.force_authenticate(self.admin)
+        reponse = self.client.post(reverse("utilisateur-list"), {
+            "email": "inspecteur@ville.ca", "prenom": "Samir", "nom": "Diallo",
+            "role": Utilisateur.Role.INSPECTEUR, "mot_de_passe": "12345678",
+        })
+        self.assertEqual(reponse.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("mot_de_passe", reponse.data["erreurs"])
+
     def test_administrateur_ne_peut_pas_desactiver_son_propre_compte(self):
         self.client.force_authenticate(self.admin)
         reponse = self.client.patch(

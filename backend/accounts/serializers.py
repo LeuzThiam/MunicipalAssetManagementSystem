@@ -1,3 +1,5 @@
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from .models import Utilisateur
@@ -21,6 +23,19 @@ class UtilisateurSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 "mot_de_passe": "Un mot de passe est requis pour créer un utilisateur."
             })
+
+        mot_de_passe = attrs.get("password")
+        if mot_de_passe:
+            utilisateur = self.instance or Utilisateur()
+            for champ in ("email", "prenom", "nom"):
+                if champ in attrs:
+                    setattr(utilisateur, champ, attrs[champ])
+            try:
+                validate_password(mot_de_passe, utilisateur)
+            except DjangoValidationError as erreur:
+                raise serializers.ValidationError({
+                    "mot_de_passe": list(erreur.messages)
+                }) from erreur
         return attrs
 
     def create(self, validated_data):

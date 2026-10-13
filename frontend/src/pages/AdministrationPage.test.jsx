@@ -9,7 +9,7 @@ vi.mock('../api/client', () => ({ api: vi.fn() }))
 describe('AdministrationPage', () => {
   beforeEach(() => {
     api.mockReset()
-    api.mockResolvedValueOnce({ results: [{ id: 1, prenom: 'Lina', nom: 'Roy', email: 'lina@ville.ca', role: 'LECTEUR', is_active: true }] })
+    api.mockResolvedValueOnce({ next: null, results: [{ id: 1, prenom: 'Lina', nom: 'Roy', email: 'lina@ville.ca', role: 'LECTEUR', is_active: true }] })
   })
 
   it('affiche les comptes existants', async () => {
@@ -19,7 +19,7 @@ describe('AdministrationPage', () => {
   })
 
   it('crée un compte avec le rôle choisi', async () => {
-    api.mockResolvedValueOnce({ id: 2 }).mockResolvedValueOnce({ results: [] })
+    api.mockResolvedValueOnce({ id: 2 }).mockResolvedValueOnce({ next: null, results: [] })
     const utilisateur = userEvent.setup()
     const vue = render(<AdministrationPage />)
     const page = within(vue.container)
@@ -32,5 +32,16 @@ describe('AdministrationPage', () => {
     await utilisateur.click(page.getByRole('button', { name: 'Créer le compte' }))
     await waitFor(() => expect(api).toHaveBeenCalledWith('/utilisateurs/', expect.objectContaining({ method: 'POST' })))
     expect(JSON.parse(api.mock.calls[1][1].body).role).toBe('INSPECTEUR')
+  })
+
+  it('charge toutes les pages de comptes', async () => {
+    api.mockReset()
+    api
+      .mockResolvedValueOnce({ next: 'page-2', results: [{ id: 1, prenom: 'Lina', nom: 'Roy', email: 'lina@ville.ca', role: 'LECTEUR', is_active: true }] })
+      .mockResolvedValueOnce({ next: null, results: [{ id: 2, prenom: 'Samir', nom: 'Diallo', email: 'samir@ville.ca', role: 'INSPECTEUR', is_active: true }] })
+    render(<AdministrationPage />)
+    expect(await screen.findByText('Samir Diallo')).toBeInTheDocument()
+    expect(api).toHaveBeenNthCalledWith(1, '/utilisateurs/?page=1')
+    expect(api).toHaveBeenNthCalledWith(2, '/utilisateurs/?page=2')
   })
 })

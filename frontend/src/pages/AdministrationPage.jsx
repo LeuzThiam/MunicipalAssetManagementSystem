@@ -12,8 +12,16 @@ export function AdministrationPage() {
 
   async function chargerUtilisateurs() {
     try {
-      const donnees = await api('/utilisateurs/?page_size=100')
-      setUtilisateurs(donnees.results ?? donnees)
+      const comptes = []
+      let page = 1
+      let pageSuivante = true
+      while (pageSuivante) {
+        const donnees = await api(`/utilisateurs/?page=${page}`)
+        comptes.push(...(donnees.results ?? donnees))
+        pageSuivante = Boolean(donnees.next)
+        page += 1
+      }
+      setUtilisateurs(comptes)
       setErreur('')
     } catch (exception) {
       setErreur(exception.message)
