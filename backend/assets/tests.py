@@ -322,6 +322,22 @@ class APIgeospatialeTests(APITestCase):
         }
         self.assertEqual(identifiants, {"BORNE-CENTRE"})
 
+    def test_lecteur_ne_peut_pas_modifier_une_borne(self):
+        lecteur = Utilisateur.objects.create_user(
+            email="lecteur@example.com",
+            password="mot-de-passe-test",
+            prenom="Louis",
+            nom="Lecteur",
+            role=Utilisateur.Role.LECTEUR,
+        )
+        self.client.force_authenticate(lecteur)
+        reponse = self.client.patch(
+            reverse("borne-detail", args=[self.borne_centre.id]),
+            {"pression_dynamique": 62},
+            format="json",
+        )
+        self.assertEqual(reponse.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_proches_filtre_et_ordonne_les_bornes_par_distance(self):
         reponse = self.client.get(
             reverse("borne-proches"),
