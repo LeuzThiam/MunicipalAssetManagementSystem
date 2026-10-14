@@ -20,6 +20,28 @@ from .models import Batiment, Borne, SegmentRue
 from .views import RAYON_MAX_METRES, lire_bbox, lire_point, lire_rayon
 
 
+class ModelesActifsTests(SimpleTestCase):
+    def test_representation_borne_utilise_identifiant_source(self):
+        borne = Borne(identifiant_source="BORNE-101")
+
+        self.assertEqual(str(borne), "Borne BORNE-101")
+
+    def test_representation_batiment_privilegie_le_nom(self):
+        batiment = Batiment(nom="Hôtel de ville", adresse="1 rue Principale")
+
+        self.assertEqual(str(batiment), "Hôtel de ville")
+
+    def test_representation_batiment_utilise_adresse_si_nom_absent(self):
+        batiment = Batiment(nom=None, adresse="10 rue des Érables")
+
+        self.assertEqual(str(batiment), "10 rue des Érables")
+
+    def test_representation_segment_rue_utilise_le_nom(self):
+        segment = SegmentRue(nom="Rue Principale")
+
+        self.assertEqual(str(segment), "Rue Principale")
+
+
 class ValidationParametresGeospatiauxTests(SimpleTestCase):
     def test_lire_point_construit_un_point_wgs84(self):
         point = lire_point(QueryDict("lat=45.5019&lng=-73.5674"))
@@ -337,6 +359,30 @@ class APIgeospatialeTests(APITestCase):
             format="json",
         )
         self.assertEqual(reponse.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_gestionnaire_peut_modifier_une_borne(self):
+        reponse = self.client.patch(
+            reverse("borne-detail", args=[self.borne_centre.id]),
+            {"pression_dynamique": 62},
+            format="json",
+        )
+
+        self.assertEqual(reponse.status_code, status.HTTP_200_OK)
+        self.borne_centre.refresh_from_db()
+        self.assertEqual(self.borne_centre.pression_dynamique, 62)
+
+    def test_batiments_sont_en_lecture_seule(self):
+        reponse = self.client.post(reverse("batiment-list"), {}, format="json")
+
+        self.assertEqual(reponse.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_batiments_proches_retourne_404_pour_borne_absente(self):
+        reponse = self.client.get(
+            reverse("borne-batiments-proches", args=[999_999]),
+            {"rayon": 200},
+        )
+
+        self.assertEqual(reponse.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_proches_filtre_et_ordonne_les_bornes_par_distance(self):
         reponse = self.client.get(

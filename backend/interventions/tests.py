@@ -1,14 +1,17 @@
 from datetime import timedelta
 
 from django.contrib.gis.geos import Point
+from django.test import SimpleTestCase
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.test import APITestCase
 
 from accounts.models import Utilisateur
 from assets.models import Borne
 from .models import Intervention
+from .validators import valider_chronologie_intervention
 
 
 class InterventionApiTests(APITestCase):
@@ -116,3 +119,67 @@ class InterventionApiTests(APITestCase):
 
         self.assertEqual(reponse.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("terminee_le", reponse.data["erreurs"])
+
+    def test_lecteur_ne_peut_pas_modifier_une_intervention(self):
+        intervention = Intervention.objects.create(
+            borne=self.borne,
+            creee_par=self.gestionnaire,
+            type=Intervention.Type.ENTRETIEN,
+            description="Entretien préventif.",
+        )
+        lecteur = Utilisateur.objects.create_user(
+            email="lecteur@example.com",
+            password="mot-de-passe-test",
+            prenom="Lina",
+            nom="Roy",
+            role=Utilisateur.Role.LECTEUR,
+        )
+        self.client.force_authenticate(lecteur)
+
+        reponse = self.client.patch(
+            reverse("intervention-detail", args=[intervention.pk]),
+            {"priorite": Intervention.Priorite.URGENTE},
+        )
+
+        self.assertEqual(reponse.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class ValidateurChronologieInterventionTests(SimpleTestCase):
+    def test_accepte_une_intervention_terminee_coherente(self):
+        maintenant = timezone.now()
+
+        resultat = valider_chronologie_intervention(
+            Intervention.Statut.TERMINEE,
+            maintenant - timedelta(days=1),
+            maintenant,
+        )
+
+        self.assertIsNone(resultat)
+
+    def test_refuse_une_intervention_terminee_sans_date(self):
+        with self.assertRaises(ValidationError):
+            valider_chronologie_intervention(
+                Intervention.Statut.TERMINEE,
+                timezone.now(),
+                None,
+            )
+
+    def test_refuse_une_date_sur_un_statut_non_termine(self):
+        with self.assertRaises(ValidationError):
+            valider_chronologie_intervention(
+                Intervention.Statut.EN_COURS,
+                timezone.now() - timedelta(days=1),
+                timezone.now(),
+            )
+
+
+class InterventionModeleTests(SimpleTestCase):
+    def test_representation_decrit_la_borne_et_le_type(self):
+        intervention = Intervention(
+            borne=Borne(identifiant_source="R01-061"),
+            creee_par=Utilisateur(email="gestionnaire@example.com"),
+            type=Intervention.Type.REPARATION,
+            description="Remplacer la vanne.",
+        )
+
+        self.assertEqual(str(intervention), "Intervention R01-061 — Réparation")
