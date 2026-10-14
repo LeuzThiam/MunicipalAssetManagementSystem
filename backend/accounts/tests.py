@@ -5,6 +5,33 @@ from rest_framework.test import APITestCase
 from .models import Utilisateur
 
 
+class UtilisateurModeleTests(APITestCase):
+    def test_creation_normalise_le_domaine_du_courriel(self):
+        utilisateur = Utilisateur.objects.create_user(
+            email="ADMIN@VILLE.CA",
+            password="mot-de-passe-solide",
+            prenom="Alex",
+            nom="Gagnon",
+        )
+
+        self.assertEqual(utilisateur.email, "ADMIN@ville.ca")
+        self.assertTrue(utilisateur.check_password("mot-de-passe-solide"))
+
+    def test_creation_refuse_un_courriel_absent(self):
+        with self.assertRaisesMessage(ValueError, "adresse email est obligatoire"):
+            Utilisateur.objects.create_user(
+                email="",
+                password="mot-de-passe-solide",
+                prenom="Alex",
+                nom="Gagnon",
+            )
+
+    def test_representation_retourne_le_courriel(self):
+        utilisateur = Utilisateur(email="lecteur@ville.ca")
+
+        self.assertEqual(str(utilisateur), "lecteur@ville.ca")
+
+
 class AuthentificationTests(APITestCase):
     def setUp(self):
         self.utilisateur = Utilisateur.objects.create_user(
