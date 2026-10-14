@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .models import Intervention
+from .validators import valider_chronologie_intervention
 
 
 class InterventionSerializer(serializers.ModelSerializer):
@@ -22,8 +23,8 @@ class InterventionSerializer(serializers.ModelSerializer):
     def validate(self, donnees):
         statut = donnees.get("statut", getattr(self.instance, "statut", None))
         terminee_le = donnees.get("terminee_le", getattr(self.instance, "terminee_le", None))
-        if statut == Intervention.Statut.TERMINEE and not terminee_le:
-            raise serializers.ValidationError({
-                "terminee_le": "La date de réalisation est obligatoire pour une intervention terminée."
-            })
+        planifiee_le = donnees.get("planifiee_le", getattr(self.instance, "planifiee_le", None))
+
+        valider_chronologie_intervention(statut, planifiee_le, terminee_le)
+
         return donnees
