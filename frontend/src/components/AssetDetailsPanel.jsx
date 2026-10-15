@@ -14,6 +14,7 @@ export function AssetDetailsPanel({ selection, onClose }) {
   const { couche, feature } = selection
   const proprietes = feature.properties ?? {}
   const estBorne = couche.cle === 'bornes'
+  const peutCreerInspection = ['ADMIN', 'GESTIONNAIRE', 'INSPECTEUR'].includes(utilisateur?.role)
   const peutGererInterventions = ['ADMIN', 'GESTIONNAIRE'].includes(utilisateur?.role)
   const id = feature.id ?? proprietes.id
   const identifiant = estBorne
@@ -36,7 +37,7 @@ export function AssetDetailsPanel({ selection, onClose }) {
           </dl>
           <div className="asset-actions">
             <Link className="primary-link" to={`/inspections?borne=${id}`}>Voir les inspections</Link>
-            <Link className="secondary-link" to={`/inspections?borne=${id}&action=nouvelle`}>Créer une inspection</Link>
+            {peutCreerInspection && <Link className="secondary-link" to={`/inspections?borne=${id}&action=nouvelle`}>Créer une inspection</Link>}
             <Link className="secondary-link" to={`/interventions?borne=${id}`}>Voir les interventions</Link>
             {peutGererInterventions && <Link className="secondary-link" to={`/interventions?borne=${id}&action=nouvelle`}>Créer une intervention</Link>}
           </div>

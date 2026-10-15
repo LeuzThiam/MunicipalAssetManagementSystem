@@ -37,4 +37,39 @@ describe('InspectionsPage', () => {
     await waitFor(() => expect(api).toHaveBeenCalledWith('/inspections/', expect.objectContaining({ method: 'POST' })))
     expect(await screen.findByText('R01-061')).toBeInTheDocument()
   })
+
+  it('masque le formulaire de création pour un lecteur', async () => {
+    api.mockResolvedValueOnce({ results: [] })
+
+    render(
+      <MemoryRouter initialEntries={['/inspections?borne=3348&action=nouvelle']}>
+        <AuthContextForTests value={{ utilisateur: { role: 'LECTEUR' } }}>
+          <InspectionsPage />
+        </AuthContextForTests>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText('Aucune inspection enregistrée.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Nouvelle inspection' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Enregistrer l’inspection' })).not.toBeInTheDocument()
+  })
+
+  it('affiche le message renvoyé lorsque l’enregistrement échoue', async () => {
+    api
+      .mockResolvedValueOnce({ results: [] })
+      .mockRejectedValueOnce(new Error('Date d’inspection invalide.'))
+    const utilisateur = userEvent.setup()
+
+    render(
+      <MemoryRouter initialEntries={['/inspections?borne=3348&action=nouvelle']}>
+        <AuthContextForTests value={{ utilisateur: { role: 'INSPECTEUR' } }}>
+          <InspectionsPage />
+        </AuthContextForTests>
+      </MemoryRouter>,
+    )
+
+    await utilisateur.click(screen.getByRole('button', { name: 'Enregistrer l’inspection' }))
+
+    expect(await screen.findByText('Date d’inspection invalide.')).toBeInTheDocument()
+  })
 })

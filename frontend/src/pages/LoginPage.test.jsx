@@ -15,4 +15,16 @@ describe('LoginPage', () => {
     await utilisateur.click(screen.getByRole('button', { name: 'Se connecter' }))
     expect(connexion).toHaveBeenCalledWith('agent@ville.ca', 'secret-solide')
   })
+
+  it('affiche un message lorsque la connexion échoue', async () => {
+    const connexion = vi.fn().mockRejectedValue(new Error('Non autorisé'))
+    const utilisateur = userEvent.setup()
+    render(<MemoryRouter><AuthContextForTests value={{ utilisateur: null, connexion }}><LoginPage /></AuthContextForTests></MemoryRouter>)
+
+    await utilisateur.type(screen.getByLabelText('Adresse courriel'), 'agent@ville.ca')
+    await utilisateur.type(screen.getByLabelText('Mot de passe'), 'incorrect')
+    await utilisateur.click(screen.getByRole('button', { name: 'Se connecter' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Courriel ou mot de passe incorrect.')
+  })
 })

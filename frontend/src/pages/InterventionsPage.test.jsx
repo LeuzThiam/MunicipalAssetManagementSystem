@@ -24,4 +24,19 @@ describe('InterventionsPage', () => {
     await waitFor(() => expect(api).toHaveBeenCalledWith('/interventions/', expect.objectContaining({ method: 'POST' })))
     expect(await screen.findByText('R01-061')).toBeInTheDocument()
   })
+
+  it('présente les interventions en lecture seule à un inspecteur', async () => {
+    api.mockResolvedValueOnce({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [{ id: 7, borne_identifiant: 'R01-061', type: 'REPARATION', priorite: 'HAUTE', statut: 'PLANIFIEE', planifiee_le: null, createur_nom: 'Moussa Ndiaye' }],
+    })
+
+    render(<MemoryRouter initialEntries={['/interventions?borne=3348&action=nouvelle']}><AuthContextForTests value={{ utilisateur: { role: 'INSPECTEUR' } }}><InterventionsPage /></AuthContextForTests></MemoryRouter>)
+
+    expect(await screen.findByText('Planifiée')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Nouvelle intervention' })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Statut de l’intervention 7')).not.toBeInTheDocument()
+  })
 })
