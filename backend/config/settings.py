@@ -157,3 +157,29 @@ REST_FRAMEWORK = {
     ],
     'EXCEPTION_HANDLER': 'common.exceptions.gestionnaire_exceptions',
 }
+
+LOG_LEVEL = env("LOG_LEVEL", default="INFO").upper()
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "{asctime} {levelname} {name} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+        },
+    },
+    "loggers": {
+        "municipal": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+    },
+}

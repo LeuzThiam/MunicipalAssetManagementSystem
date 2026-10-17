@@ -1,6 +1,11 @@
+import logging
+
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
+
+
+logger = logging.getLogger("municipal.api")
 
 
 MESSAGES_PAR_STATUT = {
@@ -21,6 +26,13 @@ def gestionnaire_exceptions(exc, context):
     reponse = exception_handler(exc, context)
 
     if reponse is None:
+        requete = context.get("request")
+        logger.error(
+            "Erreur API inattendue sur %s %s.",
+            getattr(requete, "method", "INCONNU"),
+            getattr(requete, "path", "chemin-inconnu"),
+            exc_info=(type(exc), exc, exc.__traceback__),
+        )
         return Response(
             {
                 "code": "ErreurInterne",
