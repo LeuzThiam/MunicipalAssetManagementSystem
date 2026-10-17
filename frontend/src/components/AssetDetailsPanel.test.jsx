@@ -50,6 +50,7 @@ describe('AssetDetailsPanel', () => {
     const vue = render(<MemoryRouter><AuthContextForTests value={{ utilisateur: { role: 'LECTEUR' } }}><AssetDetailsPanel selection={selection} onClose={vi.fn()} /></AuthContextForTests></MemoryRouter>)
 
     expect(within(vue.container).getByRole('link', { name: 'Voir les interventions' })).toBeInTheDocument()
+    expect(within(vue.container).queryByRole('link', { name: 'Créer une inspection' })).not.toBeInTheDocument()
     expect(within(vue.container).queryByRole('link', { name: 'Créer une intervention' })).not.toBeInTheDocument()
   })
 })
