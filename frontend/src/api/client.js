@@ -13,6 +13,54 @@ export const jetons = {
   },
 }
 
+const messagesParStatut = {
+  400: 'La requête est invalide.',
+  401: 'Votre session a expiré. Veuillez vous reconnecter.',
+  403: 'Vous n’avez pas l’autorisation d’effectuer cette action.',
+  404: 'La ressource demandée est introuvable.',
+  500: 'Une erreur interne est survenue. Réessayez plus tard.',
+}
+
+function premierMessage(erreurs) {
+  if (typeof erreurs === 'string') return erreurs
+  if (Array.isArray(erreurs)) {
+    for (const erreur of erreurs) {
+      const message = premierMessage(erreur)
+      if (message) return message
+    }
+  }
+  if (erreurs && typeof erreurs === 'object') {
+    for (const erreur of Object.values(erreurs)) {
+      const message = premierMessage(erreur)
+      if (message) return message
+    }
+  }
+  return ''
+}
+
+function creerErreur(reponse, contenu) {
+  const message = (premierMessage(contenu.erreurs) || contenu.message)
+    ?? contenu.detail
+    ?? messagesParStatut[reponse.status]
+    ?? 'Une erreur est survenue.'
+  const erreur = new Error(message)
+  erreur.status = reponse.status
+  erreur.code = contenu.code
+  erreur.erreurs = contenu.erreurs
+  return erreur
+}
+
+async function appelerService(url, options) {
+  try {
+    return await fetch(url, options)
+  } catch (cause) {
+    const erreur = new Error('Le service est indisponible. Vérifiez votre connexion et réessayez.')
+    erreur.status = 0
+    erreur.cause = cause
+    throw erreur
+  }
+}
+
 async function executerRequete(path, options, nouvelleTentative) {
   const headers = new Headers(options.headers)
   const acces = jetons.lireAcces()
@@ -21,12 +69,12 @@ async function executerRequete(path, options, nouvelleTentative) {
     headers.set('Content-Type', 'application/json')
   }
 
-  let reponse = await fetch(`${API_URL}${path}`, { ...options, headers })
+  const reponse = await appelerService(`${API_URL}${path}`, { ...options, headers })
 
   if (reponse.status === 401 && !nouvelleTentative && path !== '/connexion/rafraichir/') {
     const refresh = jetons.lireRafraichissement()
     if (refresh) {
-      const rafraichissement = await fetch(`${API_URL}/connexion/rafraichir/`, {
+      const rafraichissement = await appelerService(`${API_URL}/connexion/rafraichir/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh }),
@@ -43,9 +91,7 @@ async function executerRequete(path, options, nouvelleTentative) {
 
   const contenu = await reponse.json().catch(() => ({}))
   if (!reponse.ok) {
-    const erreur = new Error(contenu.detail ?? contenu.message ?? 'Une erreur est survenue.')
-    erreur.status = reponse.status
-    throw erreur
+    throw creerErreur(reponse, contenu)
   }
   return contenu
 }

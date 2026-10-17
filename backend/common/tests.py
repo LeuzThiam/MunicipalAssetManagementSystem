@@ -2,12 +2,14 @@ from django.contrib.gis.geos import Point
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.exceptions import NotFound
 from rest_framework.test import APITestCase
 
 from accounts.models import Utilisateur
 from assets.models import Borne
 from inspections.models import Inspection
 from interventions.models import Intervention
+from .exceptions import gestionnaire_exceptions
 
 
 class HealthEndpointTests(APITestCase):
@@ -15,6 +17,43 @@ class HealthEndpointTests(APITestCase):
         response = self.client.get("/api/health/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, {"status": "ok"})
+
+
+class GestionErreursApiTests(APITestCase):
+    def setUp(self):
+        self.utilisateur = Utilisateur.objects.create_user(
+            email="lecteur@example.com",
+            password="mot-de-passe-test",
+            prenom="Lina",
+            nom="Roy",
+            role=Utilisateur.Role.LECTEUR,
+        )
+        self.client.force_authenticate(self.utilisateur)
+
+    def test_ressource_absente_retourne_une_erreur_json_uniforme(self):
+        reponse = self.client.get(reverse("borne-detail", args=[999_999]))
+
+        self.assertEqual(reponse.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(reponse.data, {
+            "code": "Http404",
+            "message": "La ressource demandée est introuvable.",
+        })
+
+    def test_exception_inattendue_ne_divulgue_pas_le_detail_technique(self):
+        reponse = gestionnaire_exceptions(
+            RuntimeError("mot de passe de base exposé"),
+            {},
+        )
+
+        self.assertEqual(reponse.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertEqual(reponse.data["code"], "ErreurInterne")
+        self.assertNotIn("mot de passe", reponse.data["message"])
+
+    def test_exception_drf_connue_utilise_un_message_francais(self):
+        reponse = gestionnaire_exceptions(NotFound(), {})
+
+        self.assertEqual(reponse.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(reponse.data["message"], "La ressource demandée est introuvable.")
 
 
 class TableauDeBordApiTests(APITestCase):
