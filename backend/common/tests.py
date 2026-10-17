@@ -40,14 +40,16 @@ class GestionErreursApiTests(APITestCase):
         })
 
     def test_exception_inattendue_ne_divulgue_pas_le_detail_technique(self):
-        reponse = gestionnaire_exceptions(
-            RuntimeError("mot de passe de base exposé"),
-            {},
-        )
+        with self.assertLogs("municipal.api", level="ERROR") as journaux:
+            reponse = gestionnaire_exceptions(
+                RuntimeError("mot de passe de base exposé"),
+                {},
+            )
 
         self.assertEqual(reponse.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertEqual(reponse.data["code"], "ErreurInterne")
         self.assertNotIn("mot de passe", reponse.data["message"])
+        self.assertIn("Erreur API inattendue", journaux.output[0])
 
     def test_exception_drf_connue_utilise_un_message_francais(self):
         reponse = gestionnaire_exceptions(NotFound(), {})
